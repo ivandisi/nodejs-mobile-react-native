@@ -99,12 +99,12 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
           @Override
           public void run() {
             emptyTrash();
-            try {
+            // try {
               copyNodeJsAssets();
               initCompleted = true;
-            } catch (IOException e) {
-              throw new RuntimeException("Node assets copy failed", e);
-            }
+            // } catch (IOException e) {
+            //    e.printStackTrace(); // throw new RuntimeException("Node assets copy failed", e);
+            // }
             initSemaphore.release();
             emptyTrash();
           }
@@ -321,8 +321,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     }
   }
 
-  private boolean copyNativeAssetsFrom() throws IOException {
-    // Load the additional asset folder and files lists
+  private boolean copyNativeAssetsFrom() {
+   try { // Load the additional asset folder and files lists
     ArrayList<String> nativeDirs = readFileFromAssets(nativeAssetsPath + "/dir.list");
     ArrayList<String> nativeFiles = readFileFromAssets(nativeAssetsPath + "/file.list");
     // Copy additional asset files to project working folder
@@ -340,12 +340,15 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     } else {
       Log.v(TAG, "No assets to copy from " + nativeAssetsPath);
     }
-    return true;
+    }  catch(Exception e){
+         e.printStackTrace();
+    }
+     return true;
   }
 
 
-  private void copyNodeJsAssets() throws IOException {
-    assetManager = getReactApplicationContext().getAssets();
+  private void copyNodeJsAssets(){
+ try {   assetManager = getReactApplicationContext().getAssets();
 
     // If a previous project folder is present, move it to the trash.
     File nodeDirReference = new File(nodeJsProjectPath);
@@ -389,6 +392,9 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
     saveLastUpdateTime();
     Log.d(TAG, "Node assets copy completed successfully");
+    } catch(Exception e){
+         e.printStackTrace();
+    }
   }
 
   private ArrayList<String> readFileFromAssets(String filename){
@@ -411,8 +417,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   }
 
   // Recursively copies contents of a folder in assets to a path
-  private static void copyAssetFolder(String fromAssetPath, String toPath) throws IOException {
-    String[] files = assetManager.list(fromAssetPath);
+  private static void copyAssetFolder(String fromAssetPath, String toPath) {
+  try {  String[] files = assetManager.list(fromAssetPath);
     boolean res = true;
 
     if (files.length == 0) {
@@ -422,11 +428,13 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       new File(toPath).mkdirs();
       for (String file : files)
         copyAssetFolder(fromAssetPath + "/" + file, toPath + "/" + file);
+    }} catch(Exception e ){
+         e.printStackTrace();
     }
   }
 
-  private static void copyAsset(String fromAssetPath, String toPath) throws IOException {
-    InputStream in = null;
+  private static void copyAsset(String fromAssetPath, String toPath){
+   try { InputStream in = null;
     OutputStream out = null;
     in = assetManager.open(fromAssetPath);
     new File(toPath).createNewFile();
@@ -436,15 +444,22 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     in = null;
     out.flush();
     out.close();
-    out = null;
+    out = null;}
+    catch(Exception e){
+         e.printStackTrace();
+    }
   }
 
   // Copy file from an input stream to an output stream
-  private static void copyFile(InputStream in, OutputStream out) throws IOException {
+  private static void copyFile(InputStream in, OutputStream out) {
+    try{
     byte[] buffer = new byte[1024];
     int read;
     while ((read = in.read(buffer)) != -1) {
       out.write(buffer, 0, read);
+    } 
+    } catch( Exception e){
+         e.printStackTrace();
     }
   }
 }
