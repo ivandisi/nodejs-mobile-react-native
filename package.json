@@ -1,7 +1,6 @@
-
 {
   "name": "nodejs-mobile-react-native",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "Node.js for Mobile Apps React Native plugin",
   "main": "index.js",
   "scripts": {
@@ -32,10 +31,5 @@
     "ncp": "^2.0.0",
     "mkdirp": "^0.5.1",
     "xcode": "^0.9.3"
-  },
-  "rnpm": {
-    "commands": {
-      "postlink": "node node_modules/nodejs-mobile-react-native/scripts/module-postlink.js"
-    }
   }
 }
