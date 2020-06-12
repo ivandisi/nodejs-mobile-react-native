@@ -2,21 +2,21 @@ var path = require('path');
 var fs = require('fs');
 var ncp = require('ncp');
 var xcode = require('xcode');
-
 var android;
+
 try {
-  android = require('./../../../node_modules/@react-native-community/cli/build/tools/android');
+  android = require('../../@react-native-community/cli-platform-android');
 } catch (ex) {
   // Older version of react-native, try to load cli from inside react-native.
-  android = require('./../../../node_modules/react-native/local-cli/core/android');
+  android = require('../../node_modules/react-native/local-cli/core/android');
 }
 
 var ios;
 try {
-  ios = require('./../../../node_modules/@react-native-community/cli/build/tools/ios');
+  ios = require('../../@react-native-community/cli-platform-ios');
 } catch (ex) {
   // Older version of react-native, try to load cli from inside react-native.
-  ios = require('./../../../node_modules/react-native/local-cli/core/ios');
+  ios = require('../../node_modules/react-native/local-cli/core/ios');
 }
 
 function hostPackageDir(file) {
