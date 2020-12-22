@@ -1,3 +1,4 @@
+import org.gradle.internal.os.OperatingSystem;
 
 buildscript {
     repositories {
@@ -56,19 +57,22 @@ android {
         targetSdkVersion _nodeTargetSdkVersion
         versionCode 1
         versionName "1.0"
-        externalNativeBuild {
-            cmake {
-                cppFlags ""
-                if(!_isCorrectSTLDefinedByApp) {
-                    arguments "-DANDROID_STL=c++_shared"
+
+        if (!OperatingSystem.current().isWindows()) {
+            externalNativeBuild {
+                cmake {
+                    cppFlags ""
+                    if (!_isCorrectSTLDefinedByApp) {
+                        arguments "-DANDROID_STL=c++_shared"
+                    }
                 }
             }
-        }
-        ndk {
-            abiFilters = project(":app").android.defaultConfig.ndk.abiFilters
-        }
-        aaptOptions {
-            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            ndk {
+                abiFilters = project(":app").android.defaultConfig.ndk.abiFilters
+            }
+            aaptOptions {
+                ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+            }
         }
     }
     
@@ -79,10 +83,12 @@ android {
     }
     
     sourceSets {
-        main {
-            jniLibs.srcDirs 'libnode/bin/'
+        if (!OperatingSystem.current().isWindows()) {
+            main {
+                jniLibs.srcDirs 'libnode/bin/'
+            }
+            main.assets.srcDirs += '../install/resources/nodejs-modules'
         }
-        main.assets.srcDirs += '../install/resources/nodejs-modules'
     }
     
     lintOptions {
@@ -98,7 +104,28 @@ dependencies {
     implementation 'com.facebook.react:react-native:+'
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 task CopyNodeProjectAssetsFolder (type:Sync) {
+    if (OperatingSystem.current().isWindows()) return;
+
     description "Copies the Node Project to a build folder for manipulation."
     from "${rootProject.projectDir}/../nodejs-assets/nodejs-project"
     into "${rootProject.buildDir}/nodejs-assets/nodejs-project/"
@@ -108,6 +135,8 @@ task CopyNodeProjectAssetsFolder (type:Sync) {
 }
 
 task GenerateNodeProjectAssetsLists {
+    if (OperatingSystem.current().isWindows()) return;
+
     dependsOn "CopyNodeProjectAssetsFolder"
     description "Generates a list for runtime copying"
     inputs.dir "${rootProject.buildDir}/nodejs-assets/"
@@ -143,7 +172,6 @@ project.android.sourceSets.main.assets.srcDirs+="${rootProject.buildDir}/nodejs-
 
 tasks.getByPath(":${project.name}:preBuild").dependsOn GenerateNodeProjectAssetsLists
 
-import org.gradle.internal.os.OperatingSystem;
 
 String shouldRebuildNativeModules = System.getenv('NODEJS_MOBILE_BUILD_NATIVE_MODULES');
 
@@ -172,6 +200,8 @@ if (shouldRebuildNativeModules==null) {
 }
 
 if ("1".equals(shouldRebuildNativeModules)) {
+
+    if (OperatingSystem.current().isWindows()) return;
 
     String npmCommandName = 'npm';
     String nodeCommandName = 'node';

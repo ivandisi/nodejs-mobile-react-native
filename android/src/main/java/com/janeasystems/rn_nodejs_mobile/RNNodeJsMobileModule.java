@@ -22,6 +22,8 @@ import android.content.SharedPreferences;
 import android.system.Os;
 import android.system.ErrnoException;
 
+import androidx.annotation.NonNull;
+
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.Semaphore;
@@ -53,11 +55,16 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
   private static AssetManager assetManager;
 
   // Flag to indicate if node is ready to receive app events.
+
   private static boolean nodeIsReadyForAppEvents = false;
 
   static {
-    System.loadLibrary("nodejs-mobile-react-native-native-lib");
-    System.loadLibrary("node");
+    try {
+      System.loadLibrary("nodejs-mobile-react-native-native-lib");
+      System.loadLibrary("node");
+    }catch (java.lang.UnsatisfiedLinkError e){
+      e.printStackTrace();
+    }
   }
 
   // To store the instance when node is started.
@@ -76,19 +83,26 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     nodeJsProjectPath = filesDirPath + "/" + NODEJS_PROJECT_DIR;
     builtinModulesPath = filesDirPath + "/" + NODEJS_BUILTIN_MODULES;
     trashDirPath = filesDirPath + "/" + TRASH_DIR;
-    nativeAssetsPath = BUILTIN_NATIVE_ASSETS_PREFIX + getCurrentABIName();
 
-    // Sets the TMPDIR environment to the cacheDir, to be used in Node as os.tmpdir
     try {
-      Os.setenv("TMPDIR", reactContext.getCacheDir().getAbsolutePath(), true);
-    } catch (ErrnoException e) {
+      nativeAssetsPath = BUILTIN_NATIVE_ASSETS_PREFIX + getCurrentABIName();
+
+      // Sets the TMPDIR environment to the cacheDir, to be used in Node as os.tmpdir
+      try {
+        Os.setenv("TMPDIR", reactContext.getCacheDir().getAbsolutePath(), true);
+      } catch (ErrnoException e) {
+        e.printStackTrace();
+      }
+
+      // Register the filesDir as the Node data dir.
+      registerNodeDataDirPath(filesDirPath);
+
+      asyncInit();
+    }catch (Exception e){
+      e.printStackTrace();
+    } catch (java.lang.UnsatisfiedLinkError e) {
       e.printStackTrace();
     }
-
-    // Register the filesDir as the Node data dir.
-    registerNodeDataDirPath(filesDirPath);
-
-    asyncInit();
   }
 
   private void asyncInit() {
@@ -141,65 +155,84 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   @ReactMethod
   public void startNodeWithScript(String script, ReadableMap options) throws Exception {
-    // A New module instance may have been created due to hot reload.
-    _instance = this;
-    if(!_startedNodeAlready) {
-      _startedNodeAlready = true;
+    try {
+      // A New module instance may have been created due to hot reload.
+      _instance = this;
+      if (!_startedNodeAlready) {
+        _startedNodeAlready = true;
 
-      final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
-      final String scriptToRun = new String(script);
+        final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
+        final String scriptToRun = new String(script);
 
-      new Thread(new Runnable() {
-        @Override
-        public void run() {
-          waitForInit();
-          startNodeWithArguments(new String[]{"node",
-            "-e",
-            scriptToRun
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
-          );
-        }
-      }).start();
+        new Thread(new Runnable() {
+          @Override
+          public void run() {
+            waitForInit();
+            startNodeWithArguments(new String[]{"node",
+                            "-e",
+                            scriptToRun
+                    },
+                    nodeJsProjectPath + ":" + builtinModulesPath,
+                    redirectOutputToLogcat
+            );
+          }
+        }).start();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
     }
   }
 
   @ReactMethod
   public void startNodeProject(final String mainFileName, ReadableMap options) throws Exception {
-    // A New module instance may have been created due to hot reload.
-    _instance = this;
-    if(!_startedNodeAlready) {
-      _startedNodeAlready = true;
+    try {
+      // A New module instance may have been created due to hot reload.
+      _instance = this;
+      if (!_startedNodeAlready) {
+        _startedNodeAlready = true;
 
-      final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
+        final boolean redirectOutputToLogcat = extractRedirectOutputToLogcatOption(options);
 
-      new Thread(new Runnable() {
-        @Override
-        public void run() {
-          waitForInit();
-          startNodeWithArguments(new String[]{"node",
-            nodeJsProjectPath + "/" + mainFileName
-            },
-            nodeJsProjectPath + ":" + builtinModulesPath,
-            redirectOutputToLogcat
-          );
-        }
-      }).start();
+        new Thread(new Runnable() {
+          @Override
+          public void run() {
+            waitForInit();
+            startNodeWithArguments(new String[]{"node",
+                            nodeJsProjectPath + "/" + mainFileName
+                    },
+                    nodeJsProjectPath + ":" + builtinModulesPath,
+                    redirectOutputToLogcat
+            );
+          }
+        }).start();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
     }
   }
 
   @ReactMethod
   public void sendMessage(String channel, String msg) {
-    sendMessageToNodeChannel(channel, msg);
+    try {
+      sendMessageToNodeChannel(channel, msg);
+    } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
+    }
   }
 
   // Sends an event through the App Event Emitter.
-  private void sendEvent(String eventName,
-                         @Nullable WritableMap params) {
-    reactContext
-      .getJSModule(RCTNativeAppEventEmitter.class)
-      .emit(eventName, params);
+  private void sendEvent(String eventName, @Nullable WritableMap params) {
+    try {
+      reactContext
+            .getJSModule(RCTNativeAppEventEmitter.class)
+            .emit(eventName, params);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 
   public static void sendMessageToApplication(String channelName, String msg) {
@@ -214,15 +247,23 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   @Override
   public void onHostPause() {
-    if (nodeIsReadyForAppEvents) {
-      sendMessageToNodeChannel(SYSTEM_CHANNEL, "pause");
+    try {
+      if (nodeIsReadyForAppEvents) {
+        sendMessageToNodeChannel(SYSTEM_CHANNEL, "pause");
+      }
+    } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
     }
   }
 
   @Override
   public void onHostResume() {
-    if (nodeIsReadyForAppEvents) {
-      sendMessageToNodeChannel(SYSTEM_CHANNEL, "resume");
+    try {
+      if (nodeIsReadyForAppEvents) {
+        sendMessageToNodeChannel(SYSTEM_CHANNEL, "resume");
+      }
+    } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
     }
   }
 
@@ -239,19 +280,23 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
   // Called from JNI when node sends a message through the bridge.
   public static void sendMessageBackToReact(String channelName, String msg) {
-    if (_instance != null) {
-      final RNNodeJsMobileModule _moduleInstance = _instance;
-      final String _channelNameToPass = new String(channelName);
-      final String _msgToPass = new String(msg);
-      new Thread(new Runnable() {
-        @Override
-        public void run() {
-          WritableMap params = Arguments.createMap();
-          params.putString("channelName", _channelNameToPass);
-          params.putString("message", _msgToPass);
-          _moduleInstance.sendEvent("nodejs-mobile-react-native-message", params);
-        }
-      }).start();
+    try {
+      if (_instance != null) {
+        final RNNodeJsMobileModule _moduleInstance = _instance;
+        final String _channelNameToPass = new String(channelName);
+        final String _msgToPass = new String(msg);
+        new Thread(new Runnable() {
+          @Override
+          public void run() {
+            WritableMap params = Arguments.createMap();
+            params.putString("channelName", _channelNameToPass);
+            params.putString("message", _msgToPass);
+            _moduleInstance.sendEvent("nodejs-mobile-react-native-message", params);
+          }
+        }).start();
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 
@@ -268,7 +313,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       try {
         initSemaphore.acquire();
         initSemaphore.release();
-      } catch (InterruptedException ie) {
+      } catch (Exception ie) {
         initSemaphore.release();
         ie.printStackTrace();
       }
@@ -348,50 +393,52 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
 
 
   private void copyNodeJsAssets(){
- try {   assetManager = getReactApplicationContext().getAssets();
+    try {
+        assetManager = getReactApplicationContext().getAssets();
 
-    // If a previous project folder is present, move it to the trash.
-    File nodeDirReference = new File(nodeJsProjectPath);
-    if (nodeDirReference.exists()) {
-      File trash = new File(trashDirPath);
-      nodeDirReference.renameTo(trash);
-    }
+        // If a previous project folder is present, move it to the trash.
+        File nodeDirReference = new File(nodeJsProjectPath);
+        if (nodeDirReference.exists()) {
+          File trash = new File(trashDirPath);
+          nodeDirReference.renameTo(trash);
+        }
 
-    // Load the nodejs project's folder and file lists.
-    ArrayList<String> dirs = readFileFromAssets("dir.list");
-    ArrayList<String> files = readFileFromAssets("file.list");
+        // Load the nodejs project's folder and file lists.
+        ArrayList<String> dirs = readFileFromAssets("dir.list");
+        ArrayList<String> files = readFileFromAssets("file.list");
 
-    // Copy the nodejs project files to the application's data path.
-    if (dirs.size() > 0 && files.size() > 0) {
-      Log.d(TAG, "Node assets copy using pre-built lists");
-      for (String dir : dirs) {
-        new File(filesDirPath + "/" + dir).mkdirs();
-      }
+        // Copy the nodejs project files to the application's data path.
+        if (dirs.size() > 0 && files.size() > 0) {
+          Log.d(TAG, "Node assets copy using pre-built lists");
+          for (String dir : dirs) {
+            new File(filesDirPath + "/" + dir).mkdirs();
+          }
 
-      for (String file : files) {
-        String src = file;
-        String dest = filesDirPath + "/" + file;
-        copyAsset(src, dest);
-      }
-    } else {
-      Log.d(TAG, "Node assets copy enumerating APK assets");
-      copyAssetFolder(NODEJS_PROJECT_DIR, nodeJsProjectPath);
-    }
+          for (String file : files) {
+            String src = file;
+            String dest = filesDirPath + "/" + file;
+            copyAsset(src, dest);
+          }
+        } else {
+          Log.d(TAG, "Node assets copy enumerating APK assets");
+          copyAssetFolder(NODEJS_PROJECT_DIR, nodeJsProjectPath);
+        }
 
-    copyNativeAssetsFrom();
+        copyNativeAssetsFrom();
 
-    // Do the builtin-modules copy too.
-    // If a previous built-in modules folder is present, delete it.
-    File modulesDirReference = new File(builtinModulesPath);
-    if (modulesDirReference.exists()) {
-      deleteFolderRecursively(modulesDirReference);
-    }
+        // Do the builtin-modules copy too.
+        // If a previous built-in modules folder is present, delete it.
+        File modulesDirReference = new File(builtinModulesPath);
+        if (modulesDirReference.exists()) {
+          deleteFolderRecursively(modulesDirReference);
+        }
 
-    // Copy the nodejs built-in modules to the application's data path.
-    copyAssetFolder("builtin_modules", builtinModulesPath);
+        // Copy the nodejs built-in modules to the application's data path.
+        copyAssetFolder("builtin_modules", builtinModulesPath);
 
-    saveLastUpdateTime();
-    Log.d(TAG, "Node assets copy completed successfully");
+        saveLastUpdateTime();
+        Log.d(TAG, "Node assets copy completed successfully");
+
     } catch(Exception e){
          e.printStackTrace();
     }
@@ -409,7 +456,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       reader.close();
     } catch (FileNotFoundException e) {
       Log.d(TAG, "File not found: " + filename);
-    } catch (IOException e) {
+    } catch (Exception e) {
       lines = new ArrayList();
       e.printStackTrace();
     }
