@@ -98,7 +98,7 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       registerNodeDataDirPath(filesDirPath);
 
       asyncInit();
-    }catch (Exception e){
+    } catch (Exception e){
       e.printStackTrace();
     } catch (java.lang.UnsatisfiedLinkError e) {
       e.printStackTrace();
@@ -198,13 +198,19 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
         new Thread(new Runnable() {
           @Override
           public void run() {
-            waitForInit();
-            startNodeWithArguments(new String[]{"node",
-                            nodeJsProjectPath + "/" + mainFileName
-                    },
-                    nodeJsProjectPath + ":" + builtinModulesPath,
-                    redirectOutputToLogcat
-            );
+            try {
+              waitForInit();
+              startNodeWithArguments(new String[]{"node",
+                              nodeJsProjectPath + "/" + mainFileName
+                      },
+                      nodeJsProjectPath + ":" + builtinModulesPath,
+                      redirectOutputToLogcat
+              );
+            } catch (Exception e) {
+              e.printStackTrace();
+            } catch (java.lang.UnsatisfiedLinkError e) {
+              e.printStackTrace();
+            }
           }
         }).start();
       }
@@ -220,6 +226,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
     try {
       sendMessageToNodeChannel(channel, msg);
     } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
@@ -253,6 +261,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       }
     } catch (java.lang.UnsatisfiedLinkError e) {
       e.printStackTrace();
+    } catch (Exception e){
+      e.printStackTrace();
     }
   }
 
@@ -263,6 +273,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
         sendMessageToNodeChannel(SYSTEM_CHANNEL, "resume");
       }
     } catch (java.lang.UnsatisfiedLinkError e) {
+      e.printStackTrace();
+    } catch (Exception e){
       e.printStackTrace();
     }
   }
@@ -328,6 +340,8 @@ public class RNNodeJsMobileModule extends ReactContextBaseJavaModule implements 
       PackageInfo packageInfo = this.reactContext.getPackageManager().getPackageInfo(this.reactContext.getPackageName(), 0);
       this.lastUpdateTime = packageInfo.lastUpdateTime;
     } catch (PackageManager.NameNotFoundException e) {
+      e.printStackTrace();
+    } catch (Exception e){
       e.printStackTrace();
     }
     return (this.lastUpdateTime != this.previousLastUpdateTime);
